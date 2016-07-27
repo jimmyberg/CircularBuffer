@@ -15,6 +15,7 @@ class CircularBuffer{
 public:
 	T get();
 	void set(T newVal);
+	int getAvailable(){ return available;}
 private:
 	T data[size];
 	int getPointer = 0;
