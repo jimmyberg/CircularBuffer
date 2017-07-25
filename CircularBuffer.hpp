@@ -89,6 +89,16 @@ public:
 	bool isEmpty(){
 		return (setIndex == getIndex);
 	}
+	/**
+	 * @brief      Clears all data in buffer.
+	 *
+	 *             This is done by moving the getIndex and mark available bytes
+	 *             to zero.
+	 */
+	void clearAll(){
+		storedData = 0;
+		setIndex = getIndex;
+	}
 private:
 	T dataArray[sizeBuffer];
 	unsigned int getIndex = 0;
