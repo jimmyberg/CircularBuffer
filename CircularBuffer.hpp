@@ -9,7 +9,7 @@
 using namespace std;
 #endif //DEBUG_CIRCULARBUFFER
 
-#include <cstddef>
+#include <stddef.h>
 
 /**
  * @brief      Class for FIFO type circular buffer.
