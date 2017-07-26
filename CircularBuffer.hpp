@@ -161,7 +161,7 @@ size_t CircularBuffer<T, sizeBuffer>::set(const T* data, size_t size){
 		size = currentFree;
 	}
 	for (unsigned int i = 0; i < size; ++i){
-		dataArray[setIndex = (setIndex + 1) % sizeBuffer] = dataArray[i];
+		dataArray[setIndex = (setIndex + 1) % sizeBuffer] = data[i];
 	}
 	storedData += size;
 	return size;
