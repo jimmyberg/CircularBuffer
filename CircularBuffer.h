@@ -2,7 +2,7 @@
 #ifndef _CIRCULARBUFFER_HPP_
 #define _CIRCULARBUFFER_HPP_
 
-//#define DEBUG_CIRCULARBUFFER
+#define DEBUG_CIRCULARBUFFER
 
 #ifdef DEBUG_CIRCULARBUFFER
 #include <iostream>
@@ -47,7 +47,7 @@ public:
 	 *
 	 * @return     Number of numbers retrieved from buffer.(1 or 0 when full)
 	 */
-	size_t set(const T* newVal);
+	size_t set(T newVal);
 	/**
 	 * @brief      Stores up to size numbers in the buffer.
 	 *
@@ -62,24 +62,12 @@ public:
 	 */
 	size_t set(const T* data, size_t size);
 	/**
-	 * @brief      Gets how many numbers are stored in the buffer.
-	 *
-	 * @return     Amount of numbers stored.
-	 */
-	unsigned int getStored();
-	/**
-	 * @brief      Gets free places in buffer.
-	 *
-	 * @return     Free space.
-	 */
-	unsigned int getFree();
-	/**
 	 * @brief      Determines if full.
 	 *
 	 * @return     True if full, False otherwise.
 	 */
 	bool isFull(){
-		return ((setIndex + 1) % sizeBuffer == getIndex);
+		return nextSetP() == getP;
 	}
 	/**
 	 * @brief      Determines if empty.
@@ -87,38 +75,52 @@ public:
 	 * @return     True if empty, False otherwise.
 	 */
 	bool isEmpty(){
-		return (setIndex == getIndex);
+		return (setP == getP);
 	}
 	/**
 	 * @brief      Clears all data in buffer.
 	 *
-	 *             This is done by moving the getIndex and mark available bytes
+	 *             This is done by moving the getP and mark available bytes
 	 *             to zero.
 	 */
-	void clearAll(){
-		storedData = 0;
-		setIndex = getIndex;
+	void clear(){
+		setP = getP;
 	}
 private:
+	T* end(){return &dataArray[sizeBuffer];}
+	T* begin(){return dataArray;}
+	T* nextSetP(){
+		T* ret = setP + 1;
+		if(ret == end())
+			return begin();
+		else
+			return ret;
+	}
+	T* nextGetP(){
+		T* ret = getP + 1;
+		if(ret == end())
+			return begin();
+		else
+			return ret;
+	}
 	T dataArray[sizeBuffer];
-	unsigned int getIndex = 0;
-	unsigned int setIndex = 0;
-	unsigned int storedData = 0;
+	T* getP = dataArray;
+	T* setP = dataArray;
 };
 
 template<typename T, size_t sizeBuffer>
 size_t CircularBuffer<T, sizeBuffer>::get(T* data){
-	if(storedData != 0){
+	if(!isEmpty()){
 		#ifdef DEBUG_CIRCULARBUFFER
-		cout << "CircularBuffer get " << dataArray[getIndex] << " at index " << getIndex << endl;
+		cout << "CircularBuffer get " << *getP << " at index " << getP << endl;
 		#endif //DEBUG_CIRCULARBUFFER
-		*data = dataArray[getIndex = (getIndex + 1) % sizeBuffer];
-		storedData--;
+		*data = *getP;
+		getP = nextGetP();
 		return 1;
 	}
 	else{
 		#ifdef DEBUG_CIRCULARBUFFER
-		cerr << "Error. CircularBuffer is empty." << endl << "available = " << available << endl << "size = " << size << endl;
+		cerr << "Error. CircularBuffer is empty." << endl;
 		#endif //DEBUG_CIRCULARBUFFER
 		return 0;
 	}
@@ -126,55 +128,42 @@ size_t CircularBuffer<T, sizeBuffer>::get(T* data){
 template<typename T, size_t sizeBuffer>
 size_t CircularBuffer<T, sizeBuffer>::get(T* data, size_t size){
 	// Adjust size. Size will be the amount of data that will be retrieved.
-	if(size > storedData){
-		size = storedData;
+	size_t ret = 0;
+	while(!isEmpty() && size != ret++){
+		*data++ = *getP;
+		getP = nextGetP();
 	}
-	for (unsigned int i = 0; i < size; ++i){
-		data[i] = dataArray[getIndex = (getIndex + 1) % sizeBuffer];
-	}
-	storedData -= size;
-	return size;
+	return ret;
 }
 
 template<typename T, size_t sizeBuffer>
-size_t CircularBuffer<T, sizeBuffer>::set(const T* data){
-	if(getFree() != 0){
+size_t CircularBuffer<T, sizeBuffer>::set(T data){
+	T* nextSet = nextSetP();
+	if(nextSet != getP){
 		#ifdef DEBUG_CIRCULARBUFFER
-		cout << "CircularBuffer set " << *data << " at index " << setIndex << endl;
+		cout << "CircularBuffer set " << data << " at index " << setP << endl;
 		#endif //DEBUG_CIRCULARBUFFER
-		dataArray[setIndex = (setIndex + 1) % sizeBuffer] = *data;
-		storedData++;
+		*setP = data;
+		setP = nextSet;
 		return 1;
 	}
 	else{
 		#ifdef DEBUG_CIRCULARBUFFER
-		cerr << "Error. CircularBuffer is full." << endl << "available = " << available << endl << "size = " << size << endl;
+		cerr << "Error. CircularBuffer is full." << endl;
 		#endif //DEBUG_CIRCULARBUFFER
 		return 0;
-	}	
+	}
 }
 
 template<typename T, size_t sizeBuffer>
 size_t CircularBuffer<T, sizeBuffer>::set(const T* data, size_t size){
-	unsigned int currentFree = getFree();
-	if(size > currentFree){
-		size = currentFree;
+	size_t ret = 0;
+	T* nextSet;
+	while((nextSet = nextSetP()) != getP && size != ret++){
+		*setP = *data++;
+		setP = nextSet;
 	}
-	for (unsigned int i = 0; i < size; ++i){
-		dataArray[setIndex = (setIndex + 1) % sizeBuffer] = data[i];
-	}
-	storedData += size;
 	return size;
-}
-
-template<typename T, size_t sizeBuffer>
-unsigned int CircularBuffer<T, sizeBuffer>::getStored(){ 
-	return storedData;
-}
-
-template<typename T, size_t sizeBuffer>
-unsigned int CircularBuffer<T, sizeBuffer>::getFree(){ 
-	return sizeBuffer - storedData;
 }
 
 #endif //_CIRCULARBUFFER_HPP_
